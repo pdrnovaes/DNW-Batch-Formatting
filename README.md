@@ -2,9 +2,13 @@
 
 Kit para instalar **Windows 11 Pro x64 limpo pela rede**, usando um **PC com Windows 11 comum** como servidor da bancada, sem comprar software de distribuição.
 
+**[⬇ Baixar o kit completo em ZIP](https://github.com/pdrnovaes/dnw-batch-formatting/archive/refs/heads/main.zip)** · [Abrir o repositório](https://github.com/pdrnovaes/dnw-batch-formatting)
+
+No PC servidor do escritório: baixe o ZIP, extraia a pasta e siga **No escritório: montar a bancada**, abaixo. O ZIP contém o kit; a ISO do Windows é colocada separadamente em `Área de Trabalho\ISO`.
+
 Entrega nos notebooks: uma conta local **`User`**, **senha vazia**, com permissão de administrador local. Português do Brasil e teclado ABNT2; a interface permanece no idioma disponível na ISO. Nenhum programa extra, agente de gerenciamento ou alteração de aplicativos do Windows é instalado. O nome do computador é gerado pelo Windows. A ativação fica para a conferência final, conforme a licença de cada equipamento.
 
-**Estado: scripts preparados e verificados, ainda sem instalação completa de um notebook.** A pasta `ISO` foi encontrada vazia durante a preparação. O primeiro uso exige a ISO, o ADK/WinPE e um piloto com o hardware do escritório. Verificação de XML e sintaxe não substitui esse piloto.
+**Estado: scripts preparados e verificados, ainda sem instalação completa de um notebook.** A consulta da primeira ISO confirmou Windows 11 Pro x64, índice 6, build 26300.9457, mas em português de Portugal. A operação escolheu substituir essa mídia por uma ISO **pt-BR**; o kit identifica o índice e o idioma novamente a cada preparação. O primeiro uso exige a ISO definitiva, o ADK/WinPE e um piloto com o hardware do escritório. Verificação de XML e sintaxe não substitui esse piloto.
 
 ## Como funciona
 
