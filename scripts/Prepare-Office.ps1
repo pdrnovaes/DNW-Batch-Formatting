@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)][string]$InterfaceAlias,
     [Parameter(Mandatory)][string]$ServerIP,
-    [Parameter(Mandatory)][switch]$IsolatedNetwork,
+    [switch]$IsolatedNetwork,
     [string]$IsoPath,
     [ValidateRange(0, 999)][int]$ImageIndex = 0,
     [string]$BuildRoot = 'C:\DNWBatch',
@@ -13,17 +13,24 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
 Assert-Admin
-if (-not $IsolatedNetwork) { throw 'Este kit usa DHCP somente em bancada isolada. Leia o roteiro antes de usar -IsolatedNetwork.' }
-$serverValue = Get-IPv4Value $ServerIP
-$octets = $ServerIP.Split('.')
-if ([int]$octets[3] -lt 1 -or [int]$octets[3] -gt 99) { throw 'Use IP final 1 a 99 para o servidor; o pool da bancada sera .100 a .114.' }
-$subnet = "$($octets[0]).$($octets[1]).$($octets[2]).0/24"
+Get-IPv4Value $ServerIP | Out-Null
 $adapter = Get-NetAdapter -Name $InterfaceAlias -ErrorAction Stop
 $adapterAddresses = @(Get-NetIPAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue)
-$address = @($adapterAddresses | Where-Object { $_.IPAddress -eq $ServerIP -and $_.PrefixLength -eq 24 -and $_.PrefixOrigin -eq 'Manual' })
-if ($address.Count -ne 1) { throw "Configure manualmente $ServerIP / 255.255.255.0, sem gateway, na placa $InterfaceAlias. O kit nao altera enderecos de rede." }
+$address = @($adapterAddresses | Where-Object { $_.IPAddress -eq $ServerIP })
+if ($address.Count -ne 1) { throw "O IP $ServerIP precisa pertencer a placa $InterfaceAlias. O kit nao altera enderecos de rede." }
+$prefixLength = [int]$address[0].PrefixLength
+$subnet = Get-IPv4Subnet -Address $ServerIP -PrefixLength $prefixLength
+$networkMode = 'ExistingDhcp'
 $network = Get-NetIPConfiguration -InterfaceIndex $adapter.ifIndex
-if ($network.IPv4DefaultGateway) { throw 'A placa da bancada tem gateway. Use um switch isolado, sem uplink ao roteador/LAN, sem gateway nesta placa.' }
+if ($IsolatedNetwork) {
+    $networkMode = 'Isolated'
+    $lastOctet = [int]$ServerIP.Split('.')[3]
+    if ($prefixLength -ne 24 -or $address[0].PrefixOrigin -ne 'Manual' -or $lastOctet -lt 1 -or $lastOctet -gt 99 -or $network.IPv4DefaultGateway) {
+        throw 'Modo isolado exige IP manual /24 final 1 a 99, sem gateway, em switch separado.'
+    }
+} else {
+    Write-Host 'Modo rede existente: DHCP do Tftpd64 DESATIVADO. Reserve o IP do servidor no DHCP atual antes do piloto.' -ForegroundColor Cyan
+}
 if (-not $IsoPath) {
     $isoFolder = Join-Path ([Environment]::GetFolderPath('Desktop')) 'ISO'
     $isoFiles = @(Get-ChildItem -LiteralPath $isoFolder -Filter *.iso -File -ErrorAction SilentlyContinue)
@@ -95,47 +102,17 @@ try {
     $tools = Join-Path $root 'Tools'
     [IO.Directory]::CreateDirectory($tools) | Out-Null
     Copy-Item -Path (Join-Path (Split-Path $TftpdExe) '*') -Destination $tools -Recurse -Force
-    $ini = @"
-[TFTPD32]
-BaseDirectory=$root\TFTP
-TftpPort=69
-LocalIP=$ServerIP
-DHCP LocalIP=$ServerIP
-Services=5
-SecurityLevel=3
-VirtualRoot=1
-Negociate=1
-PXECompatibility=1
-WinSize=4
-Timeout=5
-MaxRetransmit=6
-Enable IPv4=1
-Enable IPv6=0
-Max Simultaneous Transfers=15
-TftpLogFile=$root\tftp.log
-[DHCP]
-IP_Pool=$($octets[0]).$($octets[1]).$($octets[2]).100
-PoolSize=15
-BootFile=bootmgfw.efi
-Mask=255.255.255.0
-Gateway=
-DNS=
-DNS2=
-WINS=
-DomainName=
-AddOptionNumber=0
-AddOptionValue=
-AddOptionNumber1=0
-AddOptionValue1=
-Lease (minutes)=120
-"@
+    $ini = New-TftpdConfiguration -Root $root -ServerIP $ServerIP -IsolatedNetwork:$IsolatedNetwork
+    Assert-TftpdConfiguration -Configuration $ini -IsolatedNetwork:$IsolatedNetwork
     [IO.File]::WriteAllText((Join-Path $tools 'tftpd32.ini'),$ini,[Text.Encoding]::Default)
     foreach ($rule in @('DNWBatch-SMB','DNWBatch-TFTP')) { if (Get-NetFirewallRule -Name $rule -ErrorAction SilentlyContinue) { throw "Regra $rule ja existe. Encerre a bancada anterior." } }
     New-NetFirewallRule -Name DNWBatch-SMB -DisplayName 'DNW Batch - SMB bancada' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 445 -LocalAddress $ServerIP -RemoteAddress $subnet -InterfaceAlias $InterfaceAlias -Profile Any | Out-Null
-    New-NetFirewallRule -Name DNWBatch-TFTP -DisplayName 'DNW Batch - TFTP e DHCP bancada' -Direction Inbound -Action Allow -Program (Join-Path $tools 'tftpd64.exe') -Protocol UDP -LocalAddress $ServerIP -RemoteAddress Any -InterfaceAlias $InterfaceAlias -Profile Any | Out-Null
-    Write-Utf8 (Join-Path $root 'server.json') (@{InterfaceAlias=$InterfaceAlias;ServerIP=$ServerIP;Subnet=$subnet;BootCA=$BootCA} | ConvertTo-Json)
-    Write-Host "Preparado em $root. O DHCP ainda NAO foi iniciado." -ForegroundColor Green
-    Write-Host 'Com o cabo apenas no switch isolado, execute Start-Office.ps1. Piloto: 1 notebook, depois 2, depois 10.'
+    $udpClients = $subnet
+    if ($IsolatedNetwork) { $udpClients = 'Any' } # DHCP Discover pode ter origem 0.0.0.0.
+    New-NetFirewallRule -Name DNWBatch-TFTP -DisplayName 'DNW Batch - TFTP bancada' -Direction Inbound -Action Allow -Program (Join-Path $tools 'tftpd64.exe') -Protocol UDP -LocalAddress $ServerIP -RemoteAddress $udpClients -InterfaceAlias $InterfaceAlias -Profile Any | Out-Null
+    Write-Utf8 (Join-Path $root 'server.json') (@{InterfaceAlias=$InterfaceAlias;ServerIP=$ServerIP;Subnet=$subnet;PrefixLength=$prefixLength;BootCA=$BootCA;NetworkMode=$networkMode} | ConvertTo-Json)
+    Write-Host "Preparado em $root. Nenhum servico de boot foi iniciado. Modo: $networkMode." -ForegroundColor Green
+    Write-Host 'Na LAN existente, configure o boot no DHCP atual antes do piloto. Leia CONTINUAR-NO-ESCRITORIO.md.'
 } finally {
     if ($mountedHere) { Dismount-DiskImage -ImagePath $iso | Out-Null }
 }

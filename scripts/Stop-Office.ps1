@@ -15,5 +15,5 @@ if ($share) {
 foreach ($name in @('DNWBatch-SMB','DNWBatch-TFTP')) { Get-NetFirewallRule -Name $name -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
 $user = Get-LocalUser -Name DNWDeploy -ErrorAction SilentlyContinue
 if ($user -and $user.Description -eq 'Leitura da midia DNW; remover ao encerrar a bancada') { $user | Remove-LocalUser }
-Write-Host 'DHCP/TFTP encerrados; compartilhamento, conta temporaria e regras DNW removidos.'
+Write-Host 'Tftpd64 encerrado; compartilhamento, conta temporaria e regras DNW removidos. Parametros do DHCP externo nao foram alterados.'
 Write-Host "Os arquivos foram preservados em $root; o IP da placa tambem. Para montar novamente, use outra BuildRoot."

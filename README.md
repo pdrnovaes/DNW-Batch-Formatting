@@ -1,143 +1,98 @@
-# DNW — instalação de Windows em lote
-
-Kit para instalar **Windows 11 Pro x64 limpo pela rede**, usando um **PC com Windows 11 comum** como servidor da bancada, sem comprar software de distribuição.
+# DNW — Windows 11 Pro em lote pela rede
 
 **[⬇ Baixar o kit completo em ZIP](https://github.com/pdrnovaes/dnw-batch-formatting/archive/refs/heads/main.zip)** · [Abrir o repositório](https://github.com/pdrnovaes/dnw-batch-formatting)
 
-No PC servidor do escritório: baixe o ZIP, extraia a pasta e siga **No escritório: montar a bancada**, abaixo. O ZIP contém o kit; a ISO do Windows é colocada separadamente em `Área de Trabalho\ISO`.
+Kit para instalar Windows 11 Pro x64 pt-BR limpo, com conta local **`User` sem senha**, em vários notebooks em paralelo. Usa um PC **Windows 11 comum** temporariamente como servidor, Tftpd64 e WinPE/ADK. Não exige comprar uma ferramenta de distribuição. As licenças de Windows continuam sendo individuais conforme o procedimento da empresa.
 
-> **Rede do escritório: configuração em revisão.** Foi confirmado que o switch está ligado à rede existente, e não é uma bancada isolada. **Não execute os comandos com `-IsolatedNetwork` nessa rede.** O roteiro abaixo descreve o protótipo inicial; o modo de PXE para a LAN precisa ser definido conforme o DHCP e a topologia reais.
+**Para continuar com outro Codex no escritório: abra esta pasta e peça para ler [CONTINUAR-NO-ESCRITORIO.md](CONTINUAR-NO-ESCRITORIO.md).** O arquivo `AGENTS.md` já registra as decisões, o ambiente e o que falta validar.
 
-Entrega nos notebooks: uma conta local **`User`**, **senha vazia**, com permissão de administrador local. Português do Brasil e teclado ABNT2; a interface permanece no idioma disponível na ISO. Nenhum programa extra, agente de gerenciamento ou alteração de aplicativos do Windows é instalado. O nome do computador é gerado pelo Windows. A ativação fica para a conferência final, conforme a licença de cada equipamento.
+## Rede usada no escritório
 
-**Estado: scripts preparados e verificados, ainda sem instalação completa de um notebook.** A consulta da primeira ISO confirmou Windows 11 Pro x64, índice 6, build 26300.9457, mas em português de Portugal. A operação escolheu substituir essa mídia por uma ISO **pt-BR**; o kit identifica o índice e o idioma novamente a cada preparação. O primeiro uso exige a ISO definitiva, o ADK/WinPE e um piloto com o hardware do escritório. Verificação de XML e sintaxe não substitui esse piloto.
-
-## Como funciona
+Foi confirmada infraestrutura **MikroTik/Ubiquiti ligada à LAN existente**, sem switch isolado. Ainda falta identificar onde está o DHCP e quais são os IPs, máscaras e VLANs reais.
 
 ```text
-PC Windows 11 da bancada, com ISO e Tftpd64
-                    |
-             switch isolado
-          /         |         \
-       notebook  notebook   notebook
-          UEFI PXE IPv4 -> WinPE -> Windows Setup
+Rede existente do escritório (MikroTik / Ubiquiti)
+              |
+       switches existentes
+        /             \
+PC Windows 11       notebooks
+TFTP + SMB          UEFI PXE IPv4 -> WinPE -> Windows Setup
 ```
 
-O Tftpd64 entrega o boot e o endereço IP. O WinPE acessa uma pasta somente para leitura no servidor. O instalador usa os arquivos originais da ISO e um arquivo de respostas para configurar a conta `User`.
+**O DHCP atual continua distribuindo os IPs.** O PC da bancada fornece arquivos de boot por TFTP e a mídia por SMB. O padrão do kit é `ExistingDhcp`, com **somente TFTP ativo e DHCP próprio desligado**. Não use `-IsolatedNetwork` nessa LAN.
 
-O técnico escolhe o disco e digita `APAGAR N` em cada notebook. A partir daí a instalação segue em paralelo. A confirmação se refere ao disco inteiro: partições, arquivos e recuperação de fábrica são apagados. O layout novo contém EFI, MSR, Windows e uma partição de recuperação.
+Antes do piloto, a TI precisa identificar/configurar o boot no DHCP atual: destino TFTP = IP reservado do PC da bancada; arquivo de boot = `bootmgfw.efi` para UEFI x64. O kit não acessa nem altera automaticamente MikroTik, Ubiquiti ou o DHCP da empresa. Se houver outras VLANs, é necessário conferir roteamento, encaminhamento de boot e escopo de firewall; a configuração gerada permite somente a sub-rede da placa do servidor.
 
-**Começar com 1, depois 2 e depois 10 notebooks.** O kit limita o compartilhamento a 15 clientes e o pool DHCP a 15 endereços para deixar margem no Windows desktop. Um lote de 100 deve ser dividido. Esta versão não faz multicast e não promete 100 instalações simultâneas; o link do servidor é compartilhado entre os clientes.
+## Estado atual
 
-## O que entra no Git
+- ISO pt-BR conferida: `Windows11_Client_x64_pt-br_26300_9457.iso`, build **26300.9457**, Windows 11 Pro x64 no **índice 4**. O kit detecta o índice novamente ao preparar a mídia.
+- SHA-256 do arquivo conferido: `D9AC87C1E9E47E0EB34EED443E5691C31781074E67608A51AEE50D7C7039F684`. Identifica o arquivo local; não substitui a comparação com hash oficial nem comprova sua origem.
+- Scripts, geração do XML e bloqueio de DHCP próprio no modo LAN verificados localmente. CI executa os mesmos testes no Windows.
+- **Ainda não houve construção completa do WinPE nem instalação de um notebook.** Falta ADK/WinPE no servidor, configuração do boot no DHCP e piloto com hardware real.
 
-Scripts, modelo de respostas, testes e este roteiro. ISO, imagens WinPE, executáveis, credenciais, logs e licenças ficam fora. A ISO do Windows precisa estar disponível separadamente no escritório.
+## Preparar no PC do escritório
 
-## Hoje: preparar os arquivos
-
-1. Clone este repositório ou baixe seu ZIP. Leve a pasta ao escritório.
-2. Salve a ISO oficial Windows 11 x64 em `Área de Trabalho\ISO`. Se a pasta tiver várias ISOs, informe `-IsoPath` no comando de preparação.
-3. No PC que vai preparar a bancada, instale pela [página oficial do Windows ADK](https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install):
-   - **Windows ADK**, selecionando **Deployment Tools**.
-   - **Windows PE Add-on** da mesma versão do ADK.
-   - Escolha o ADK correspondente à versão do Windows na ISO, com as atualizações de manutenção indicadas pela Microsoft. Não use ADK antigo de Windows 10 para este kit.
-4. Opcionalmente, já baixe a ferramenta TFTP, sem executar servidor algum:
-
-   ```powershell
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Get-Tools.ps1
-   ```
-
-   O script usa Tftpd64 4.74 portátil do repositório oficial e verifica SHA-256 fixado a partir do release. O pacote fica em `.local\tools`, ignorado pelo Git. Essa pasta pode acompanhar o kit ao escritório. A preparação reutiliza o arquivo já baixado.
-
-Não precisa instalar ADK nem configurar a rede do PC de casa se a preparação será feita no escritório. Sem ISO e ADK não é possível gerar o boot final.
-
-Para conferir uma ISO finalizada sem preparar servidor ou formatar nada, execute `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Inspect-Iso.ps1`. O script monta somente a ISO em leitura, consulta metadados pela API nativa WIMGAPI e desmonta ao terminar. Não instala nem inicia o Windows contido nela.
-
-## No escritório: montar a bancada
-
-### 1. Separar a rede
-
-Use **um switch sem uplink para o roteador, rede corporativa ou outro DHCP**. Conecte nele apenas a placa de rede da bancada e os notebooks a preparar. Internet não é necessária durante a instalação. Pode manter o servidor com internet por outra placa/Wi-Fi, sem bridge nem compartilhamento de internet entre as placas.
-
-Neste roteiro, a placa da bancada usa:
-
-| Campo | Valor |
-|---|---|
-| IPv4 do servidor | `192.168.50.1` |
-| Máscara | `255.255.255.0` |
-| Gateway e DNS | Em branco |
-| Endereços dos notebooks | `192.168.50.100` a `192.168.50.114` |
-
-Configure esse IPv4 manualmente nas propriedades da placa de rede do Windows. O script confere o endereço e a ausência de gateway, mas **não consegue detectar fisicamente se o switch está desconectado da rede corporativa**. Ele não muda o IP de nenhuma placa.
-
-Este kit não configura PXE sobre o DHCP corporativo existente. Essa alternativa exige combinar os parâmetros de boot com quem administra a rede.
-
-### 2. Preparar o servidor
-
-Abra **Windows PowerShell de 64 bits como administrador**, entre na pasta do repositório e confira o nome da placa:
+1. Baixar e extrair o ZIP. A ISO não vem nele: colocá-la separadamente em `Área de Trabalho\ISO`.
+2. Abrir o Codex nesta pasta e seguir o arquivo de retomada para descobrir placa, IP, máscara, DHCP e VLANs. Reservar o IP do servidor no DHCP existente, preservando gateway e DNS.
+3. Instalar pela [página oficial da Microsoft](https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install) o Windows ADK com **Deployment Tools** e o **Windows PE Add-on** correspondente à mídia, com as atualizações indicadas pelo fabricante.
+4. Abrir Windows PowerShell de 64 bits como administrador. Executar os comandos abaixo com os valores reais.
 
 ```powershell
 Get-NetAdapter | Format-Table Name, Status, LinkSpeed
+Get-NetIPConfiguration
 Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\Prepare-Office.ps1 -InterfaceAlias "Ethernet" -ServerIP 192.168.50.1 -IsolatedNetwork
 ```
 
-Troque `Ethernet` pelo nome correto. `-IsolatedNetwork` declara que a placa está no switch separado. A pasta padrão de saída é `C:\DNWBatch`, que precisa ainda não existir. Deixe espaço para uma cópia dos arquivos da ISO e para a construção do WinPE; recomenda-se ao menos 30 GB livres.
-
-O comando:
-
-- Lê a ISO, identifica o índice **Windows 11 Pro** e confere edição/arquitetura. Não presume que Pro seja sempre o índice 6.
-- Copia seus arquivos, monta um WinPE com PowerShell e suporte a rede/armazenamento e gera os arquivos de boot PXE e uma ISO de boot alternativa.
-- Cria **apenas no servidor** a conta temporária `DNWDeploy`, sem poderes administrativos, com senha aleatória, para leitura da mídia por SMB. Essa senha é independente da conta `User` sem senha dos notebooks.
-- Cria o compartilhamento `DNWDeploy`, somente para leitura da conta temporária, e regras de firewall vinculadas à placa/IP da bancada. Não desativa o firewall nem habilita SMB1 ou acesso de convidado.
-- Prepara o Tftpd64, mas **não inicia o DHCP**.
-
-Se a ISO tiver nome de imagem diferente, use o índice listado pelo próprio erro:
+Preparação: o exemplo usa uma variável que deve ser preenchida com o endereço real e reservado da placa. O script não atribui nem muda endereços IP.
 
 ```powershell
-.\scripts\Prepare-Office.ps1 -InterfaceAlias "Ethernet" -ServerIP 192.168.50.1 -IsolatedNetwork -IsoPath "$env:USERPROFILE\Desktop\ISO\Windows11.iso" -ImageIndex 6
+$ipServidor = Read-Host 'IP reservado do PC da bancada'
+.\scripts\Prepare-Office.ps1 -InterfaceAlias 'Ethernet' -ServerIP $ipServidor -IsoPath "$env:USERPROFILE\Desktop\ISO\Windows11_Client_x64_pt-br_26300_9457.iso"
 ```
 
-O índice acima é só um exemplo. O script rejeita Home, Pro N, Enterprise, ARM64 e imagens que não sejam Windows 11 Pro x64.
+Troque `Ethernet` pelo nome correto da placa. Se o Desktop estiver redirecionado ou o nome da ISO mudar, ajuste `-IsoPath`. Se houver exatamente uma ISO na pasta Desktop\ISO, pode omitir esse parâmetro. **Não fixe o índice 6:** na mídia pt-BR conferida ele é Pro for Workstations. O script escolhe Pro e rejeita outras edições.
 
-Se houver drivers de rede/NVMe/VMD que o WinPE não reconheça, extraia o pacote **INF assinado do fabricante** e acrescente `-DriversPath "C:\DriversWinPE"`. O kit injeta esses drivers no WinPE; o Windows instalado ainda precisa ser conferido quanto aos drivers específicos do modelo.
+A saída padrão é `C:\DNWBatch`, que precisa não existir antes da preparação. Recomenda-se ao menos 30 GB livres. Se precisar de drivers para rede/NVMe/VMD, extraia os arquivos INF assinados do fabricante e acrescente `-DriversPath 'C:\DriversWinPE'`.
 
-### 3. Iniciar o PXE
+A preparação copia a mídia, constrói o WinPE, gera boot UEFI e uma ISO alternativa, cria a conta temporária **não administrativa** `DNWDeploy` no servidor e um compartilhamento somente para leitura. Essa conta tem senha aleatória e é diferente do `User` sem senha entregue nos notebooks. As regras de firewall são vinculadas à placa/IP e à sub-rede local. O firewall não é desativado, e SMB1/acesso de convidado não são habilitados.
+
+Após conferir o boot no DHCP atual, iniciar:
 
 ```powershell
-.\scripts\Start-Office.ps1 -IsolatedNetwork
+.\scripts\Start-Office.ps1
 ```
 
-Na janela do Tftpd64, confira em **Settings**, antes de conectar clientes:
+Na janela do Tftpd64, conferir:
 
 - Base Directory: `C:\DNWBatch\TFTP`.
-- Somente TFTP Server e DHCP Server ativos.
-- TFTP e DHCP vinculados ao IP `192.168.50.1`. Escolher o IP no dropdown da tela principal não substitui o vínculo em Settings.
-- Pool `192.168.50.100`, tamanho `15`, máscara `255.255.255.0`.
-- Boot File `bootmgfw.efi`; gateway e DNS vazios.
+- **Somente TFTP Server ativo. DHCP Server desmarcado.** O INI deve conter `Services=1` e pool vazio.
+- TFTP vinculado ao IP do PC em Settings. O dropdown de interface da tela principal não substitui esse vínculo.
 
-O log TFTP mostra quais arquivos o firmware pediu. Se houver erro de BCD, verifique os pedidos no log: as cópias do BCD estão em `Boot\BCD`, `EFI\Microsoft\Boot\BCD` e na raiz. O kit usa boot manager UEFI nativo da Microsoft, sem serviço WDS.
+Não publicar TFTP/SMB na internet nem criar redirecionamento de portas no IP público. Os arquivos são distribuídos na LAN.
 
-### 4. Fazer o piloto
+## Piloto e operação em lote
 
-1. Conecte um notebook de teste à energia e à rede da bancada. Desconecte discos USB de dados.
-2. Use o menu de boot único do fabricante (frequentemente F12) e escolha **UEFI Network / PXE IPv4**.
-3. No WinPE, confira modelo, serial e capacidade do disco exibido. Digite seu número e depois `APAGAR N`, por exemplo `APAGAR 0`.
-4. Deixe instalar. No reinício, deixe iniciar pelo **Windows Boot Manager do SSD**, sem selecionar PXE de novo.
-5. Entre no `User` sem senha e confira: edição Pro, acesso local, drivers e Windows funcionando. Em um terminal elevado, confira `reagentc /info` para confirmar que a recuperação foi configurada. Verifique a ativação conforme o procedimento normal da empresa.
-6. Repita em outro notebook/modelo antes de ampliar para 10. Se aparecer uma tela inesperada de conta/OOBE, pare a ampliação e valide o arquivo de respostas com aquela ISO.
+1. Conectar um notebook autorizado à energia e ao cabo da rede. Remover discos USB de dados.
+2. Selecionar **UEFI PXE IPv4** no menu de boot único do fabricante.
+3. Conferir modelo, serial e capacidade do disco. Informar seu número e digitar `APAGAR N`, por exemplo `APAGAR 0`.
+4. A instalação limpa segue automaticamente. A confirmação apaga o disco inteiro, incluindo arquivos e partições de recuperação de fábrica. O novo layout contém EFI, MSR, Windows e recuperação.
+5. No reinício, deixar iniciar pelo Windows Boot Manager do SSD. Não selecionar PXE de novo.
+6. Conferir edição Pro, idioma pt-BR, entrada no `User` sem senha, drivers e funcionamento. Em terminal elevado, conferir `reagentc /info`. Ativação conforme a licença do equipamento.
+7. Repetir com 2 notebooks e depois ampliar para 10, observando o uso normal da LAN.
 
-A conta de entrega `User` é administradora local porque é a única conta criada para a preparação. Não há autologon configurado. O XML aceita os termos da mídia durante a instalação; cabe à operação usar a mídia/licenças autorizadas.
+A conta de entrega `User` é administradora local porque é a única conta de preparação. Não há autologon configurado. Nenhum programa adicional, agente, remoção de aplicativos ou bypass de requisitos de hardware é aplicado. O XML aceita os termos da mídia durante a instalação; cabe à operação usar mídia e licenças autorizadas.
 
-### Secure Boot e adaptadores
+O compartilhamento e os arquivos de boot foram configurados para até **15 clientes**. Esta versão não usa multicast e não foi dimensionada/testada para 100 simultâneos no Windows desktop: dividir o volume total em lotes.
 
-O boot padrão usa arquivos assinados para **Windows UEFI CA 2023**, do ADK recente. O firmware precisa confiar nessa CA. Não existe uma configuração única compatível com todos os estados de atualização/revogação de firmware. Se a frota ainda usa somente a CA 2011, uma construção separada com `-BootCA 2011 -BuildRoot C:\DNWBatch2011` pode ser necessária; máquinas que revogaram os arquivos antigos exigem os novos. Valide no piloto, seguindo a orientação da Microsoft sobre a mídia de boot. O kit não desativa Secure Boot nem burla TPM/CPU/RAM.
+## Secure Boot, drivers e alternativa USB
 
-Adaptador USB para RJ-45 só consegue iniciar por PXE se o firmware do notebook suportar aquele adaptador. O driver do WinPE entra numa segunda etapa e não resolve a ausência de PXE no firmware.
+O boot padrão usa Windows UEFI CA 2023, do ADK recente. O firmware precisa confiar nessa CA. Para frota ainda compatível apenas com CA 2011, uma construção separada com `-BootCA 2011 -BuildRoot C:\DNWBatch2011` pode ser necessária. Máquinas que revogaram os arquivos antigos exigem os novos. Validar conforme a orientação da Microsoft; o kit não desativa Secure Boot.
 
-Se PXE não funcionar em um modelo, o kit também gera `C:\DNWBatch\DNW-WinPE.iso`. Ela pode iniciar uma VM ou ser gravada em mídia USB por ferramenta apropriada. Esse USB contém o boot; o restante continua vindo pela rede. Ao gravar, selecione o pendrive correto, pois a gravação apaga seu conteúdo.
+Adaptador USB para RJ-45 precisa ter suporte de PXE pelo firmware do notebook. Injetar seu driver no WinPE não resolve a falta desse suporte na primeira etapa do boot.
 
-### Encerrar a bancada
+A construção também gera `C:\DNWBatch\DNW-WinPE.iso`: pode iniciar uma VM ou ser gravada em pendrive por ferramenta apropriada. Nesse caso, o USB inicia o ambiente e a instalação continua vindo pela rede. A gravação apaga o pendrive escolhido. Drivers específicos do Windows instalado precisam ser conferidos no piloto, mesmo que o WinPE tenha rede e disco funcionando.
+
+## Encerrar
 
 Depois que todos os instaladores terminarem:
 
@@ -145,28 +100,25 @@ Depois que todos os instaladores terminarem:
 .\scripts\Stop-Office.ps1
 ```
 
-O comando fecha o processo Tftpd64 desta bancada, remove o compartilhamento, as regras DNW e a conta temporária. Não apaga os arquivos gerados nem altera o endereço da placa. Restaure a placa para DHCP nas propriedades do Windows se ela voltar ao uso normal.
+O comando fecha o Tftpd64 desta bancada, remove o compartilhamento, a conta temporária e as regras DNW. Não remove os arquivos, não muda o IP e **não restaura parâmetros de boot no DHCP externo**: a TI deve desfazer somente as alterações temporárias feitas no roteador, usando o registro dos valores anteriores.
 
-O boot WinPE contém a credencial de leitura da bancada. Guarde seus arquivos como material interno; não publique `C:\DNWBatch` nem `.local` no Git. Encerrar a bancada revoga a conta. Para montar outra, use uma pasta nova. Se a preparação falhar depois de criar a pasta, `Stop-Office.ps1` também permite retirar os recursos já criados; uma imagem WIM que permaneça montada deve ser tratada pelo DISM antes de remover seus arquivos.
+O WinPE contém a credencial de leitura da bancada. Guardar `C:\DNWBatch` como material interno. A remoção da conta temporária revoga esse acesso. Para reconstruir, usar uma pasta nova; imagens WIM que permaneçam montadas após falha exigem tratamento pelo DISM antes de remover seus arquivos.
 
-## Verificações de desenvolvimento
+## Verificações e arquivos
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Test-Kit.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Inspect-Iso.ps1 -IsoPath 'CAMINHO_DA_ISO'
 ```
 
-Os testes verificam sintaxe e geração de XML, seleção explícita do disco, conta e senha solicitadas e rejeição de parâmetros inválidos. Não montam imagens, não configuram rede e não formatam discos. A ação GitHub roda o mesmo conjunto no Windows.
+O primeiro comando verifica sintaxe, geração de XML, seleção de disco, edição/idioma e configuração LAN sem DHCP próprio. Não formata discos nem configura rede. O segundo monta somente a ISO em leitura, consulta os metadados pela API WIMGAPI e a desmonta ao terminar.
 
-Faltam validações com a ISO e hardware reais: validação do XML pelo Windows SIM/Setup, boot UEFI/Secure Boot, acesso SMB, partições/WinRE, conta local após OOBE e desempenho em lote. O resultado dessas etapas determina a liberação do uso em produção.
+O Git contém código, modelo e documentação. ISO, WIM, executáveis, credenciais, relatórios locais e arquivos de execução ficam fora. O script `Get-Tools.ps1` baixa o Tftpd64 4.74 portátil oficial e confere SHA-256; pode ser executado antes para deixar a ferramenta em `.local\tools`.
 
-## Fontes e ferramentas
+## Referências
 
-- [Tftpd64 — projeto oficial e código aberto](https://pjo2.github.io/tftpd64/) e [release 4.74](https://github.com/PJO2/tftpd64/releases/tag/v4.74).
-- [Microsoft — Windows ADK e Windows PE](https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install).
-- [Microsoft — criar e personalizar o WinPE](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/winpe-create-usb-bootable-drive?view=windows-11).
-- [Microsoft — arquivos e BCD para PXE/WinPE](https://learn.microsoft.com/en-us/windows/deployment/configure-a-pxe-server-to-load-windows-pe). O exemplo dessa página é antigo e usa BIOS; este kit constrói BCD/loader UEFI com `winload.efi`.
-- [Microsoft — arquivos de boot PXE e diferença entre bootmgfw/wdsmgfw](https://learn.microsoft.com/en-us/troubleshoot/mem/configmgr/os-deployment/understand-pxe-boot).
-- [Microsoft — automatizar a instalação](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup?view=windows-11) e [OOBE](https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/automate-oobe?view=windows-11).
-- [Microsoft — limite de conexões do Windows desktop](https://www.microsoft.com/licensing/terms/product/WindowsDesktopOperatingSystem/all).
-
-O kit não exige comprar um servidor de implantação. As ferramentas externas e o Windows continuam sujeitos aos próprios termos de uso; nenhum instalador do Windows é distribuído neste repositório.
+- [Tftpd64 oficial](https://pjo2.github.io/tftpd64/) e [release 4.74](https://github.com/PJO2/tftpd64/releases/tag/v4.74).
+- [Microsoft — Windows ADK/WinPE](https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install), [criar WinPE](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/winpe-create-usb-bootable-drive?view=windows-11) e [arquivos PXE](https://learn.microsoft.com/en-us/troubleshoot/mem/configmgr/os-deployment/understand-pxe-boot).
+- [Microsoft — automatizar Setup](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/automate-windows-setup?view=windows-11) e [OOBE](https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/automate-oobe?view=windows-11).
+- [MikroTik — DHCP Server](https://manual.mikrotik.com/docs/network-management/dhcp/server/).
+- [Microsoft — conexões do Windows desktop](https://www.microsoft.com/licensing/terms/product/WindowsDesktopOperatingSystem/all).

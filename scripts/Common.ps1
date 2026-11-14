@@ -35,3 +35,70 @@ function Get-DnwImageMetadata {
     if ($uiLanguage -notmatch '^[a-z]{2}-[A-Za-z]{2}$') { throw 'Nao foi possivel detectar o idioma principal da imagem.' }
     return @{ImageIndex=[int]$Image.ImageIndex;ImageName=$Image.ImageName;EditionId=$Image.EditionId;UILanguage=$uiLanguage}
 }
+function Get-IPv4Subnet {
+    param([string]$Address, [ValidateRange(1,30)][int]$PrefixLength)
+    $value = Get-IPv4Value $Address
+    $block = [long][math]::Pow(2,32-$PrefixLength)
+    $base = [long]([math]::Floor($value / $block) * $block)
+    $a = [math]::Floor($base / 16777216)
+    $b = [math]::Floor(($base % 16777216) / 65536)
+    $c = [math]::Floor(($base % 65536) / 256)
+    $d = $base % 256
+    return "$a.$b.$c.$d/$PrefixLength"
+}
+function New-TftpdConfiguration {
+    param([string]$Root, [string]$ServerIP, [switch]$IsolatedNetwork)
+    Get-IPv4Value $ServerIP | Out-Null
+    $services = 1 # Apenas TFTP. O DHCP continua no equipamento atual da empresa.
+    $pool = ''
+    $poolSize = 0
+    if ($IsolatedNetwork) {
+        $services = 5 # TFTP + DHCP, somente quando solicitado explicitamente.
+        $octets = $ServerIP.Split('.')
+        $pool = "$($octets[0]).$($octets[1]).$($octets[2]).100"
+        $poolSize = 15
+    }
+    return @"
+[TFTPD32]
+BaseDirectory=$Root\TFTP
+TftpPort=69
+LocalIP=$ServerIP
+DHCP LocalIP=$ServerIP
+Services=$services
+SecurityLevel=3
+VirtualRoot=1
+Negociate=1
+PXECompatibility=1
+WinSize=4
+Timeout=5
+MaxRetransmit=6
+Enable IPv4=1
+Enable IPv6=0
+Max Simultaneous Transfers=15
+TftpLogFile=$Root\tftp.log
+[DHCP]
+IP_Pool=$pool
+PoolSize=$poolSize
+BootFile=bootmgfw.efi
+Mask=255.255.255.0
+Gateway=
+DNS=
+DNS2=
+WINS=
+DomainName=
+AddOptionNumber=0
+AddOptionValue=
+AddOptionNumber1=0
+AddOptionValue1=
+Lease (minutes)=120
+"@
+}
+function Assert-TftpdConfiguration {
+    param([string]$Configuration, [switch]$IsolatedNetwork)
+    $serviceLines = @([regex]::Matches($Configuration,'(?m)^Services=(\d+)\r?$'))
+    $expected = 1
+    if ($IsolatedNetwork) { $expected = 5 }
+    if ($serviceLines.Count -ne 1 -or [int]$serviceLines[0].Groups[1].Value -ne $expected) {
+        throw 'Servicos do Tftpd64 diferentes do modo preparado. Nao inicie DHCP na rede existente.'
+    }
+}

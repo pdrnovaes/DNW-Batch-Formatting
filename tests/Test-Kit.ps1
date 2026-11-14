@@ -64,4 +64,16 @@ $dismImage.Architecture = 12
 $rejected = $false
 try { Get-DnwImageMetadata -Image $dismImage | Out-Null } catch { $rejected = $true }
 Assert-True $rejected 'ISO ARM64 deve ser rejeitada por este kit x64.'
+Assert-True ((Get-IPv4Subnet '10.25.7.200' 22) -eq '10.25.4.0/22') 'Calcular a sub-rede real, sem presumir /24.'
+Assert-True ((Get-IPv4Subnet '192.168.50.150' 24) -eq '192.168.50.0/24') 'Aceitar IP reservado com final acima de 99 na LAN.'
+$lanConfig = New-TftpdConfiguration -Root 'C:\Test' -ServerIP '10.25.7.200'
+Assert-TftpdConfiguration -Configuration $lanConfig
+Assert-True ($lanConfig -match '(?m)^Services=1\r?$') 'Na rede existente, habilitar somente TFTP.'
+Assert-True ($lanConfig -match '(?m)^PoolSize=0\r?$') 'Na rede existente, nao definir pool DHCP.'
+$rejected = $false
+try { Assert-TftpdConfiguration -Configuration ($lanConfig.Replace('Services=1','Services=5')) } catch { $rejected=$true }
+Assert-True $rejected 'Recusar inicio na LAN se o INI foi alterado para ligar DHCP.'
+$isolatedConfig = New-TftpdConfiguration -Root 'C:\Test' -ServerIP '192.168.50.1' -IsolatedNetwork
+Assert-TftpdConfiguration -Configuration $isolatedConfig -IsolatedNetwork
+Assert-True ($isolatedConfig -match '(?m)^Services=5\r?$') 'DHCP proprio apenas no modo isolado explicito.'
 Write-Host "$count verificacoes passaram. Nenhuma instalacao real foi executada." -ForegroundColor Green
