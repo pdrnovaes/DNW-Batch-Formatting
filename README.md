@@ -45,6 +45,8 @@ Scripts, modelo de respostas, testes e este roteiro. ISO, imagens WinPE, execut�
 
 Não precisa instalar ADK nem configurar a rede do PC de casa se a preparação será feita no escritório. Sem ISO e ADK não é possível gerar o boot final.
 
+Para conferir uma ISO finalizada sem preparar servidor ou formatar nada, execute `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Inspect-Iso.ps1`. O script monta somente a ISO em leitura, consulta metadados pela API nativa WIMGAPI e desmonta ao terminar. Não instala nem inicia o Windows contido nela.
+
 ## No escritório: montar a bancada
 
 ### 1. Separar a rede
