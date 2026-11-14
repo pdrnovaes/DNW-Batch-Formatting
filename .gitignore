@@ -1,0 +1,16 @@
+# Arquivos de instalacao e configuracoes locais nunca entram no Git.
+*.iso
+*.wim
+*.esd
+*.swm
+*.vhd
+*.vhdx
+*.exe
+*.zip
+*.lic
+*.log
+output/
+runtime/
+private/
+.local/
+Desktop.ini

@@ -1,0 +1,12 @@
+name: Validar kit
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxe PowerShell e perfis de instalacao
+        shell: powershell
+        run: .\tests\Test-Kit.ps1
