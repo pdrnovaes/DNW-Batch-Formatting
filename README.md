@@ -1,6 +1,10 @@
-# DNW — Windows 11 Pro em lote pela rede
+<p align="center">
+  <img src="assets/dial-logo.png" alt="Dial Network" width="360">
+</p>
 
-**[⬇ Baixar o kit completo em ZIP](https://github.com/pdrnovaes/dnw-batch-formatting/archive/refs/heads/main.zip)** · [Abrir o repositório](https://github.com/pdrnovaes/dnw-batch-formatting)
+# DNW - Batch Formatting (Formatação em lote)
+
+**[⬇ Baixar o kit completo em ZIP](https://github.com/pdrnovaes/DNW-Batch-Formatting/archive/refs/heads/main.zip)** · [Abrir o repositório](https://github.com/pdrnovaes/DNW-Batch-Formatting)
 
 Kit para instalar Windows 11 Pro x64 pt-BR limpo, com conta local **`User` sem senha**, em vários notebooks em paralelo. Usa um PC **Windows 11 comum** temporariamente como servidor, Tftpd64 e WinPE/ADK. Não exige comprar uma ferramenta de distribuição. As licenças de Windows continuam sendo individuais conforme o procedimento da empresa.
 

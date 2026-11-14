@@ -8,7 +8,8 @@ try {
     $firmware = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control' -Name PEFirmwareType).PEFirmwareType
     if ($firmware -ne 2) { throw 'Inicie este notebook em UEFI (PXE IPv4), sem modo Legacy/CSM.' }
     $settings = Get-Content -LiteralPath 'X:\DNW\settings.json' -Raw | ConvertFrom-Json
-    Write-Host 'DNW - Windows 11 Pro limpo / User sem senha' -ForegroundColor Cyan
+    Write-Host 'DNW - Batch Formatting' -ForegroundColor Cyan
+    Write-Host 'Windows 11 Pro limpo / User sem senha'
     Write-Host 'Conectando ao servidor...'
     $connected = $false
     for ($attempt = 1; $attempt -le 12; $attempt++) {

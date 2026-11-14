@@ -1,6 +1,6 @@
 # Retomada no PC do escritorio
 
-O usuario preparou este kit em casa e vai abrir outro Codex no PC de bancada para terminar a configuracao. O repositorio e publico e ja pode ser baixado pelo [ZIP da branch main](https://github.com/pdrnovaes/dnw-batch-formatting/archive/refs/heads/main.zip).
+O usuario preparou este kit em casa e vai abrir outro Codex no PC de bancada para terminar a configuracao. O repositorio e publico e ja pode ser baixado pelo [ZIP da branch main](https://github.com/pdrnovaes/DNW-Batch-Formatting/archive/refs/heads/main.zip).
 
 ## Resultado pretendido
 

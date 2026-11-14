@@ -10,7 +10,7 @@ Leia primeiro `CONTINUAR-NO-ESCRITORIO.md` e depois `README.md`.
 - PC de bancada Windows 11 comum, temporariamente como servidor. Sem Windows Server ou servidor fisico dedicado.
 - Rede existente com MikroTik e infraestrutura Ubiquiti. **Nao existe switch isolado.**
 - Nao comprar licenca de ferramenta de distribuicao. Nao usar iVentoy Free para operacao comercial.
-- Repositorio publico por solicitacao explicita: https://github.com/pdrnovaes/dnw-batch-formatting
+- Repositorio publico por solicitacao explicita: https://github.com/pdrnovaes/DNW-Batch-Formatting
 - O usuario vai abrir o Codex no PC do escritorio para finalizar a configuracao local.
 
 ## Cuidados que decorrem da implementacao
