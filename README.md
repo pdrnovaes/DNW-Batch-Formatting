@@ -6,6 +6,8 @@ Kit para instalar **Windows 11 Pro x64 limpo pela rede**, usando um **PC com Win
 
 No PC servidor do escritório: baixe o ZIP, extraia a pasta e siga **No escritório: montar a bancada**, abaixo. O ZIP contém o kit; a ISO do Windows é colocada separadamente em `Área de Trabalho\ISO`.
 
+> **Rede do escritório: configuração em revisão.** Foi confirmado que o switch está ligado à rede existente, e não é uma bancada isolada. **Não execute os comandos com `-IsolatedNetwork` nessa rede.** O roteiro abaixo descreve o protótipo inicial; o modo de PXE para a LAN precisa ser definido conforme o DHCP e a topologia reais.
+
 Entrega nos notebooks: uma conta local **`User`**, **senha vazia**, com permissão de administrador local. Português do Brasil e teclado ABNT2; a interface permanece no idioma disponível na ISO. Nenhum programa extra, agente de gerenciamento ou alteração de aplicativos do Windows é instalado. O nome do computador é gerado pelo Windows. A ativação fica para a conferência final, conforme a licença de cada equipamento.
 
 **Estado: scripts preparados e verificados, ainda sem instalação completa de um notebook.** A consulta da primeira ISO confirmou Windows 11 Pro x64, índice 6, build 26300.9457, mas em português de Portugal. A operação escolheu substituir essa mídia por uma ISO **pt-BR**; o kit identifica o índice e o idioma novamente a cada preparação. O primeiro uso exige a ISO definitiva, o ADK/WinPE e um piloto com o hardware do escritório. Verificação de XML e sintaxe não substitui esse piloto.
