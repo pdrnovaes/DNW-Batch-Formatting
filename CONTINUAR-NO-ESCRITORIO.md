@@ -17,6 +17,8 @@ Instalacoes simultaneas de Windows 11 Pro x64 pt-BR, original e limpo, com conta
 
 ## O que ja foi feito
 
+**Atualizacao de 15/11/2026:** tambem foi implementado o menu grafico offline para o pendrive, sem filtro de marca/modelo, com instalacao rapida ou tradicional. O boot de uma midia USB existente foi atualizado e verificado, com backups do anterior. Ler `docs/PENDRIVE-GRAFICO.md`; nao confundir essa verificacao de arquivo com um teste de boot/instalacao em hardware. O modo PXE de rede descrito abaixo continua pendente de configuracao no escritorio.
+
 - Scripts e arquivo de respostas implementados; conta `User` com senha vazia e permissao administrativa local.
 - Inspecao de ISO somente para leitura, sem necessidade de instalar a imagem.
 - ISO pt-BR conferida em 14/11/2026: `Windows11_Client_x64_pt-br_26300_9457.iso`, Windows 11 Pro x64 **indice 4**, build 26300.9457. SHA-256 `D9AC87C1E9E47E0EB34EED443E5691C31781074E67608A51AEE50D7C7039F684`. O indice 6 desta ISO e Pro for Workstations, nao o Pro solicitado. Reinspecionar se o arquivo mudar; a origem/autenticidade nao foi comparada com um hash publicado pelo fornecedor.

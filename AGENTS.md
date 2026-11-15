@@ -12,6 +12,8 @@ Leia primeiro `CONTINUAR-NO-ESCRITORIO.md` e depois `README.md`.
 - Nao comprar licenca de ferramenta de distribuicao. Nao usar iVentoy Free para operacao comercial.
 - Repositorio publico por solicitacao explicita: https://github.com/pdrnovaes/DNW-Batch-Formatting
 - O usuario vai abrir o Codex no PC do escritorio para finalizar a configuracao local.
+- Escopo adicional confirmado: pendrive offline com menu grafico Dial, instalacao rapida/tradicional, User sem senha, para desktops montados e notebooks sem filtro de marca/modelo. Ler `docs/PENDRIVE-GRAFICO.md`. O modo de rede continua separado e usa DHCP existente.
+- O menu USB nao inicia formatacao automaticamente no boot; a opcao rapida exige escolher o disco e confirmar graficamente. Nao reintroduzir a antiga restricao ThinkPad E14 nem a antiga inicializacao automatica do pendrive.
 
 ## Cuidados que decorrem da implementacao
 

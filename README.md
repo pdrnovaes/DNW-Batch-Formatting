@@ -8,6 +8,8 @@
 
 Kit para instalar Windows 11 Pro x64 pt-BR limpo, com conta local **`User` sem senha**, em vários notebooks em paralelo. Usa um PC **Windows 11 comum** temporariamente como servidor, Tftpd64 e WinPE/ADK. Não exige comprar uma ferramenta de distribuição. As licenças de Windows continuam sendo individuais conforme o procedimento da empresa.
 
+**Novo: [pendrive offline com menu gráfico da Dial](docs/PENDRIVE-GRAFICO.md)**, com instalação rápida ou tradicional, para desktops montados e notebooks compatíveis, sem restrição de marca/modelo. Esse modo usa os arquivos do Windows no próprio USB e não depende da rede.
+
 **Para continuar com outro Codex no escritório: abra esta pasta e peça para ler [CONTINUAR-NO-ESCRITORIO.md](CONTINUAR-NO-ESCRITORIO.md).** O arquivo `AGENTS.md` já registra as decisões, o ambiente e o que falta validar.
 
 ## Rede usada no escritório
@@ -32,7 +34,7 @@ Antes do piloto, a TI precisa identificar/configurar o boot no DHCP atual: desti
 - ISO pt-BR conferida: `Windows11_Client_x64_pt-br_26300_9457.iso`, build **26300.9457**, Windows 11 Pro x64 no **índice 4**. O kit detecta o índice novamente ao preparar a mídia.
 - SHA-256 do arquivo conferido: `D9AC87C1E9E47E0EB34EED443E5691C31781074E67608A51AEE50D7C7039F684`. Identifica o arquivo local; não substitui a comparação com hash oficial nem comprova sua origem.
 - Scripts, geração do XML e bloqueio de DHCP próprio no modo LAN verificados localmente. CI executa os mesmos testes no Windows.
-- **Ainda não houve construção completa do WinPE nem instalação de um notebook.** Falta ADK/WinPE no servidor, configuração do boot no DHCP e piloto com hardware real.
+- **Modo de rede:** ainda falta construir/validar o WinPE do servidor, configurar o boot no DHCP e fazer o piloto. **Modo USB gráfico:** o boot do pendrive existente foi atualizado e o arquivo WIM foi verificado; ainda falta iniciar a interface e testar a instalação no equipamento de destino.
 
 ## Preparar no PC do escritório
 
